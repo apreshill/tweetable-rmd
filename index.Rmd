@@ -1,0 +1,193 @@
+---
+title: "Make me R Markdown"
+author: "Alison Hill"
+date: "3/3/2021"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE)
+```
+
+<script src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script src="https://cdn.jsdelivr.net/npm/create-react-class@15.6.3/create-react-class.min.js"></script>
+
+```{js}
+// Custom React component that loads embedded Tweet HTML
+(function () {
+  const Tweet = createReactClass({
+    componentDidMount: function() {
+      twttr.widgets.load(this.el)
+    },
+    setRef: function(el) {
+      this.el = el
+    },
+    render: function() {
+      const html = { __html: this.props.html }
+      return React.createElement('div', { ref: this.setRef, dangerouslySetInnerHTML: html })
+    }
+  })
+  
+  window.embeddedTweet = function(html) {
+    return React.createElement(Tweet, { html: html, key: html })
+  }
+})()
+```
+
+## Packages
+
+```{r echo=TRUE}
+library(rtweet)
+library(reactable)
+library(tidyverse)
+library(httr)
+library(htmltools)
+```
+
+
+```{r results='hide'}
+# get all my mentions
+my_mentions <- get_mentions(n = 200)
+
+# here are all rmd tweets
+rmd_tweets <- search_tweets("rmarkdown") %>% 
+  bind_rows(search_tweets("r markdown"))
+
+rmd_tweets %>% 
+  # confirm status id, this is the one!
+  filter(status_id == "1367240020944441345") 
+```
+
+```{r}
+# save number of max buckets for fave counts
+max_buckets <- 5
+# find all my mentions replying to my original tweet
+all_replies <- my_mentions %>% 
+  select(status_id, status_in_reply_to_status_id) %>% 
+  filter(status_in_reply_to_status_id == "1367240020944441345") %>% 
+  pull(status_id) %>% 
+  rtweet::lookup_statuses() %>% 
+  # rank them
+  mutate(favorite_rank = ntile(favorite_count, n = max_buckets))
+```
+
+## All replies
+
+```{r}
+# make hearts
+fave_hearts <- function(favorite_rank, max_buckets = 5) {
+  heart_icon <- function(empty = FALSE) {
+    tagAppendAttributes(shiny::icon("heart"),
+      style = paste("color:", if (empty) "#edf0f2" else "#096B72"),
+      "aria-hidden" = "true"
+    )
+  }
+  hearts <- lapply(seq_len(max_buckets), function(i) {
+    if (i <= favorite_rank) heart_icon() else heart_icon(empty = TRUE)
+  })
+  label <- sprintf("%s out of %s", favorite_rank, max_buckets)
+  div(title = label, "aria-label" = label, role = "img", hearts)
+}
+```
+
+```{r include=FALSE}
+# troubleshooting hearts
+fake_tweets <- tibble(
+  state.name[1:5],
+  fave_count = sample(1:50, size = 5),
+  favorite_rank = ntile(fave_count, n = 5)
+)
+fake_tweets %>% 
+  #mutate(hearts = map(fave_count, fave_hearts)) 
+  reactable(
+    columns = list(
+    favorite_rank = colDef(cell = function(value) fave_hearts(value))
+  ))
+```
+
+
+
+```{r layout="l-body-outset"}
+my_pal <- function(x) rgb(colorRamp(c("#ffffff", "#79BEEE"))(x), maxColorValue = 255)
+
+all_replies %>% 
+  select(
+    screen_name, 
+    text,
+    fave_count = favorite_count,
+    favorite_rank
+    ) %>%
+  reactable(
+    
+    # global reactable options
+    defaultSorted = "fave_count",
+    defaultSortOrder = "desc",
+    searchable = TRUE,
+    highlight = TRUE,
+    rowStyle = list(cursor = "pointer"),
+    theme = reactableTheme(
+      highlightColor = "#e6f3fc"),
+    
+    # formatting individual columns
+    columns = 
+      list(
+        favorite_rank = colDef(
+          name = "Favorite Rank", 
+          cell = function(value) fave_hearts(value, 
+                                             max_buckets = max_buckets),
+          minWidth = 150
+          ),
+        text = colDef(name = "Tweet", minWidth = 300, html = TRUE, 
+          cell = function(value, index) {
+            sprintf('<a href="%s" target="_blank">%s</a>', all_replies$status_url[index], value)
+          }),
+        fave_count = colDef(name = "Favorites", style = function(value) {
+          normalized <- (value - min(all_replies$favorite_count)) / (max(all_replies$favorite_count) - min(all_replies$favorite_count))
+          color <- my_pal(normalized)
+          list(background = color)
+          }),
+        # Or using raw HTML
+        screen_name = colDef(html = TRUE, cell = function(value, index) {
+          sprintf('<a href="%s" target="_blank">%s</a>', all_replies$profile_url[index], value)
+          })
+      )
+  ) 
+```
+
+
+
+## Top 5 replies
+
+```{r top-replies, layout="l-body-outset"}
+top_replies <- all_replies %>% 
+  slice_max(favorite_count, n = 5) 
+
+top_replies %>% 
+  select(
+    screen_name, 
+    Favorites = favorite_count,
+    status_id
+    ) %>%
+  mutate(
+    embed_url = paste0(
+      "https://publish.twitter.com/oembed?url=https://twitter.com/",
+      tolower(screen_name),
+      "/status/",
+      status_id
+    ),
+    embed_html = map(embed_url, ~ httr::content(httr::GET(.x))$html)
+  ) %>%
+  select(-status_id, -embed_url) %>% 
+  reactable(
+    columns = 
+      list(
+        embed_html = colDef(
+          name = "Tweet",
+          cell = JS("function(cellInfo) {
+            return embeddedTweet(cellInfo.value)
+            }"),
+          minWidth = 350
+          )
+        )
+      )
+```
