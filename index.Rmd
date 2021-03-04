@@ -288,6 +288,7 @@ top_words %>%
 ```
 
 
+
 ## Acknowledgments {.appendix}
 
-Thanks to Tom Mock for the reactable help, and Jesse Mostipak for the nudge to tweet this in the first place `r emo::ji("raised_hands")`
+`r emo::ji("raised_hands")` Thanks to [Allison Horst](https://twitter.com/allison_horst) for the awesome hedgehog illustrations, [Tom Mock](https://twitter.com/thomas_mock) for the reactable help, [Jesse Mostipak](https://twitter.com/kierisi) for the nudge to tweet this in the first place, and [Kelly O'Briant](https://twitter.com/kellrstats) for arranging the tea session that inspired this `r emo::ji("rabbit")` `r emo::ji("hole")`
