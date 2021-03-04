@@ -1,8 +1,15 @@
 ---
-title: "Make me R Markdown"
-author: "Alison Hill"
-date: "3/3/2021"
+title: "Tweetable R Markdown"
+author: 
+  - first_name: "Alison"
+    last_name: "Hill"
+    url: https://alison.rbind.io
+    affiliation: RStudio
+    affiliation_url: https://www.rstudio.com
+date: "2021-03-04"
 output: distill::distill_article
+repository_url: https://github.com/apreshill/tweetable-rmd
+
 ---
 
 ```{r setup, include=FALSE}
@@ -42,8 +49,15 @@ library(reactable)
 library(tidyverse)
 library(httr)
 library(htmltools)
+library(tweetrmd)
+library(tidytext)
 ```
 
+## The challenge 
+
+```{r}
+tweet_embed(tweet_url("apreshill", "1367240020944441345"))
+```
 
 ```{r results='hide'}
 # get all my mentions
@@ -72,6 +86,7 @@ all_replies <- my_mentions %>%
 ```
 
 ## All replies
+
 
 ```{r}
 # make hearts
@@ -108,7 +123,7 @@ fake_tweets %>%
 
 
 ```{r layout="l-body-outset"}
-my_pal <- function(x) rgb(colorRamp(c("#ffffff", "#79BEEE"))(x), maxColorValue = 255)
+my_pal <- function(x) rgb(colorRamp(c("#E6F3FC", "#79BEEE"))(x), maxColorValue = 255)
 
 all_replies %>% 
   select(
@@ -126,7 +141,7 @@ all_replies %>%
     highlight = TRUE,
     rowStyle = list(cursor = "pointer"),
     theme = reactableTheme(
-      highlightColor = "#e6f3fc"),
+      highlightColor = "#FEDB00"),
     
     # formatting individual columns
     columns = 
@@ -179,6 +194,15 @@ top_replies %>%
   ) %>%
   select(-status_id, -embed_url) %>% 
   reactable(
+    
+    # global reactable options
+    defaultSorted = "Favorites",
+    defaultSortOrder = "desc",
+    highlight = TRUE,
+    rowStyle = list(cursor = "pointer"),
+    theme = reactableTheme(
+      highlightColor = "#FEDB00"),
+    
     columns = 
       list(
         embed_html = colDef(
@@ -191,3 +215,79 @@ top_replies %>%
         )
       )
 ```
+
+## Frequently used words
+
+```{r}
+remove_reg <- "&amp;|&lt;|&gt;"
+rmd_words <- 
+  all_replies %>% 
+  select(text, favorite_count, retweet_count) %>% 
+  filter(!str_detect(text, "^(RT)")) %>%
+  mutate(text = str_remove_all(text, remove_reg)) %>%  
+  unnest_tokens(word, text, token = "tweets", strip_url = TRUE) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         # remove package name
+         !(word %in% c("markdown", "r", "rmarkdown")),
+         !str_detect(word, "^@"),
+         !str_detect(word, "^#"))
+```
+
+```{r}
+top_words <- rmd_words %>% 
+  group_by(word) %>% 
+  summarize(uses = n(),
+            favorites = median(favorite_count),
+            retweets = median(retweet_count)) %>% 
+  ungroup() 
+  
+top_words %>% 
+  arrange(uses) %>% 
+  slice_max(uses, n = 20) %>%
+  mutate(word = factor(word, unique(word))) %>% 
+  ggplot(aes(fct_reorder(word, uses), uses)) +
+  geom_col(fill = "#096B72", show.legend = FALSE) +
+  coord_flip() +
+  labs(x = NULL, 
+       y = "Number of reply tweets containing each word") +
+  theme_minimal() 
+```
+
+In this table, find all the words used in the replies, how many replies used each word (`uses`), and the median number of times a tweet using that word was favorited and retweeted.
+
+```{r}
+top_words %>% 
+  reactable(
+    
+    # global reactable options
+    searchable = TRUE,
+    defaultSorted = "uses",
+    defaultSortOrder = "desc",
+    highlight = TRUE,
+    rowStyle = list(cursor = "pointer"),
+    theme = reactableTheme(
+      highlightColor = "#FEDB00"),
+  
+    columns = 
+      list(
+        favorites = colDef(name = "Median Favorites",
+        style = function(value) {
+          normalized <- (value - min(top_words$favorites)) / (max(top_words$favorites) - min(top_words$favorites))
+          color <- my_pal(normalized)
+          list(background = color)
+          }),
+        retweets = colDef(name = "Median Retweets",
+         style = function(value) {
+          normalized <- (value - min(top_words$retweets)) / (max(top_words$retweets) - min(top_words$retweets))
+          color <- my_pal(normalized)
+          list(background = color)
+          }))
+  )
+
+```
+
+
+## Acknowledgments {.appendix}
+
+Thanks to Tom Mock for the reactable help, and Jesse Mostipak for the nudge to tweet this in the first place `r emo::ji("raised_hands")`
