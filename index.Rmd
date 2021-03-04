@@ -6,10 +6,11 @@ author:
     url: https://alison.rbind.io
     affiliation: RStudio
     affiliation_url: https://www.rstudio.com
-date: "2021-03-04"
-output: distill::distill_article
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
 repository_url: https://github.com/apreshill/tweetable-rmd
-
 ---
 
 ```{r setup, include=FALSE}
