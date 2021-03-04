@@ -42,6 +42,12 @@ knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE)
 })()
 ```
 
+## The challenge 
+
+```{r}
+tweetrmd::tweet_embed(tweetrmd::tweet_url("apreshill", "1367240020944441345"))
+```
+
 ## Packages
 
 ```{r echo=TRUE}
@@ -50,14 +56,7 @@ library(reactable)
 library(tidyverse)
 library(httr)
 library(htmltools)
-library(tweetrmd)
 library(tidytext)
-```
-
-## The challenge 
-
-```{r}
-tweet_embed(tweet_url("apreshill", "1367240020944441345"))
 ```
 
 ```{r results='hide'}
@@ -293,3 +292,25 @@ top_words %>%
 ## Acknowledgments {.appendix}
 
 `r emo::ji("raised_hands")` Thanks to [Allison Horst](https://twitter.com/allison_horst) for the awesome hedgehog illustrations, [Tom Mock](https://twitter.com/thomas_mock) for the reactable help, [Jesse Mostipak](https://twitter.com/kierisi) for the nudge to tweet this in the first place, and [Kelly O'Briant](https://twitter.com/kellrstats) for arranging the tea session that inspired this `r emo::ji("rabbit")` `r emo::ji("hole")`
+
+
+```{r}
+library(metathis)
+meta() %>%
+  meta_description(
+    "Describe R Markdown in a tweet!"
+  ) %>% 
+  meta_name("github-repo" = "apreshill/tweetable-rmd") %>% 
+  meta_viewport() %>% 
+  meta_social(
+    title = "Tweetable R Markdown",
+    url = "https://apreshill.github.io/tweetable-rmd/",
+    image = "https://raw.githubusercontent.com/rstudio-education/teaching-in-production/master/slides/images/rmd_flowchart.png",
+    image_alt = "Artwork by Allison Horst",
+    og_type = "website",
+    og_author = "Alison Hill",
+    twitter_card_type = "summary",
+    twitter_creator = "@apreshill"
+  )
+```
+
