@@ -59,6 +59,7 @@ library(htmltools)
 library(tidytext)
 ```
 
+
 ```{r results='hide'}
 # get all my mentions
 my_mentions <- get_mentions(n = 200)
@@ -85,6 +86,16 @@ all_replies <- my_mentions %>%
   mutate(favorite_rank = ntile(favorite_count, n = max_buckets))
 
 write_rds(all_replies, "data/all_replies.rds")
+```
+
+## Begin the replies!
+
+
+```{r layout="l-body-outset"}
+ggplot(all_replies, aes(created_at)) +
+  geom_histogram(fill = "#79BEEE", alpha = .5) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))
 ```
 
 ## All replies
