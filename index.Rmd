@@ -57,6 +57,7 @@ library(tidyverse)
 library(httr)
 library(htmltools)
 library(tidytext)
+library(gghighlight)
 ```
 
 
@@ -266,6 +267,16 @@ top_words %>%
        y = "Number of reply tweets containing each word") +
   theme_minimal() 
 ```
+
+```{r}
+top_words %>% 
+  mutate(topuse = ntile(uses, n = 50)) %>% 
+  ggplot(aes(x = uses, y = favorites)) +
+  geom_point(alpha = .8, color = "#096B72") +
+  theme_minimal() +
+  gghighlight(topuse == 50, label_key = word) 
+```
+
 
 In this table, find all the words used in the replies, how many replies used each word (`uses`), and the median number of times a tweet using that word was favorited and retweeted.
 
