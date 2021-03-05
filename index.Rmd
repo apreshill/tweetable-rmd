@@ -83,6 +83,8 @@ all_replies <- my_mentions %>%
   rtweet::lookup_statuses() %>% 
   # rank them
   mutate(favorite_rank = ntile(favorite_count, n = max_buckets))
+
+write_rds(all_replies, "data/all_replies.rds")
 ```
 
 ## All replies
