@@ -239,6 +239,7 @@ rmd_words <-
   select(text, favorite_count, retweet_count) %>% 
   filter(!str_detect(text, "^(RT)")) %>%
   mutate(text = str_remove_all(text, remove_reg)) %>%  
+  mutate(text = str_remove_all(text, "@(\\w){1,15}")) %>% 
   unnest_tokens(word, text, token = "tweets", strip_url = TRUE) %>%
   filter(!word %in% stop_words$word,
          !word %in% str_remove_all(stop_words$word, "'"),
@@ -280,7 +281,7 @@ top_words %>%
 
 In this table, find all the words used in the replies, how many replies used each word (`uses`), and the median number of times a tweet using that word was favorited and retweeted.
 
-```{r}
+```{r layout="l-body-outset"}
 top_words %>% 
   reactable(
     
@@ -311,6 +312,41 @@ top_words %>%
 
 ```
 
+## My retweets
+
+```{r layout="l-body-outset"}
+my_quote_rts <- get_timeline(user = "apreshill") %>% 
+  filter(is_quote == TRUE) %>% 
+  filter(str_detect(text, "EtGnZQa4n5")) %>% 
+  select(starts_with("quoted")) 
+
+write_csv(my_quote_rts, "data/my_quote_rts.csv")
+my_quote_rts %>% 
+  select(quoted_screen_name, 
+         quoted_text, 
+         Favorites = quoted_favorite_count, 
+         Retweets = quoted_retweet_count) %>% 
+  reactable(
+    # global reactable options
+    pagination = FALSE,
+    defaultSorted = "Favorites",
+    defaultSortOrder = "desc",
+    highlight = TRUE,
+    theme = reactableTheme(highlightColor = "#FEDB00"),
+    
+    columns = 
+      list(
+        quoted_text = colDef(name = "Tweet", minWidth = 300, html = TRUE, 
+          cell = function(value, index) {
+            sprintf('<a href="%s" target="_blank">%s</a>', all_replies$status_url[index], value)
+          }),
+        # Or using raw HTML
+        quoted_screen_name = colDef(html = TRUE, cell = function(value, index) {
+          sprintf('<a href="%s" target="_blank">%s</a>', all_replies$profile_url[index], value)
+          })
+      )
+  )
+```
 
 
 ## Acknowledgments {.appendix}
