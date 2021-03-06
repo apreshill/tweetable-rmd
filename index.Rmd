@@ -20,6 +20,12 @@ knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE)
 <script src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 <script src="https://cdn.jsdelivr.net/npm/create-react-class@15.6.3/create-react-class.min.js"></script>
 
+```{css, echo=FALSE}
+.the-tweet a {
+  border-bottom: 0px;
+}
+```
+
 ```{js}
 // Custom React component that loads embedded Tweet HTML
 (function () {
@@ -166,7 +172,10 @@ all_replies %>%
                                              max_buckets = max_buckets),
           minWidth = 150
           ),
-        text = colDef(name = "Tweet", minWidth = 300, html = TRUE, 
+        text = colDef(name = "Tweet", 
+                      minWidth = 300, 
+                      html = TRUE, 
+                      class = "the-tweet",
           cell = function(value, index) {
             sprintf('<a href="%s" target="_blank">%s</a>', all_replies$status_url[index], value)
           }),
@@ -336,7 +345,10 @@ my_quote_rts %>%
     
     columns = 
       list(
-        quoted_text = colDef(name = "Tweet", minWidth = 300, html = TRUE, 
+        quoted_text = colDef(name = "Tweet", 
+                             minWidth = 300, 
+                             html = TRUE,
+                             class = "the-tweet",
           cell = function(value, index) {
             sprintf('<a href="%s" target="_blank">%s</a>', all_replies$status_url[index], value)
           }),
